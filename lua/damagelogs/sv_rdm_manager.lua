@@ -146,6 +146,7 @@ end
 net.Receive("DL_ReportPlayer", function(_len, ply)
 	local attacker = net.ReadEntity()
 	local message = net.ReadString()
+	local slay = net.ReadBool()
 	if ply:RemainingReports() <= 0 or not ply.CanReport then return end
 	if attacker == ply then return end
 	if not IsValid(attacker) then 
@@ -173,7 +174,8 @@ net.Receive("DL_ReportPlayer", function(_len, ply)
 		round = Damagelog.CurrentRound,
 		chat_open = false,
 		logs = ply.DeathDmgLog and ply.DeathDmgLog[Damagelog.CurrentRound] or false,
-		conclusion = false
+		conclusion = false,
+		slay = slay
 	})
 	Damagelog.Reports.Current[index].index = index
 	for k,v in pairs(player.GetHumans()) do
@@ -279,6 +281,7 @@ end)
 local waiting_forgive = {}
 
 net.Receive("DL_SendAnswer", function(_, ply)
+	local action = net.ReadUInt( 2 )
 	local previous = net.ReadUInt(1) != 1
 	local text = net.ReadString()
 	local index = net.ReadUInt(16)
@@ -286,6 +289,38 @@ net.Receive("DL_SendAnswer", function(_, ply)
 	if not tbl then return end
 	if tbl.chat_opened then return end
 	if ply:SteamID() != tbl.attacker then return end
+	if action == 1 then
+		RunConsoleCommand( "ulx", "aslay", ply:Nick(), 1 )
+		tbl.status = RDM_MANAGER_CANCELED
+		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
+		for k,v in pairs(player.GetHumans()) do
+			if v:CanUseRDMManager() then	
+				if v:IsActive() then
+					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, "The report #"..index.." has been resolved! (The attacker will be slain next round.)", 5, "ui/vote_yes.wav")
+				else
+					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, ply:Nick().." has canceled the report #"..index.." !", 5, "ui/vote_yes.wav")
+				end
+			end
+			v:UpdateReport(previous, index)
+		end
+		return
+	elseif action == 2 then
+		RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 10 )
+		RunConsoleCommand( "ulx", "givepoints", tbl.attacker_nick, -10 )
+		tbl.status = RDM_MANAGER_CANCELED
+		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
+		for k,v in pairs(player.GetHumans()) do
+			if v:CanUseRDMManager() then	
+				if v:IsActive() then
+					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, "The report #"..index.." has been resolved! (The attacker has given 10 points to the victim.)", 5, "ui/vote_yes.wav")
+				else
+					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, ply:Nick().." has canceled the report #"..index.." !", 5, "ui/vote_yes.wav")
+				end
+			end
+			v:UpdateReport(previous, index)
+		end
+		return
+	end
 	tbl.response = text
 	tbl.status = RDM_MANAGER_WAITING_FOR_VICTIM
 	for k,v in pairs(player.GetHumans()) do
