@@ -133,6 +133,7 @@ local function BuildReportFrame(report)
 			local slay = vgui.Create( "DButton", bPanel )
 			slay:SetText( "Slay Myself" )
 			slay.DoClick = function()
+				local text = string.Trim(TextEntry:GetValue())
 				report.finished = true
 				Button:SetDisabled( true )
 				slay:SetDisabled(true)
@@ -152,10 +153,11 @@ local function BuildReportFrame(report)
 				Damagelog:Notify(DAMAGELOG_NOTIFY_INFO, "Your response has been submitted!", 4, "")
 			end
 
-			if not slay then
+			if not report.slay then
 				local points = vgui.Create( "DButton", bPanel )
 				points:SetText( "Send Points" )
 				points.DoClick = function()
+				 	local text = string.Trim(TextEntry:GetValue())
 					report.finished = true
 					slay:SetDisabled(true)
 					points:SetDisabled( true )
@@ -176,20 +178,20 @@ local function BuildReportFrame(report)
 					Damagelog:Notify(DAMAGELOG_NOTIFY_INFO, "Your response has been submitted!", 4, "")
 				end
 
-				slay:SetSize( 150, 20 )
+				slay:SetSize( 140, 24 )
 				slay:SetPos( 0, 0 )
 
-				points:SetSize( 150, 20 )
-				points:SetPos( 150, 0 )
+				points:SetSize( 140, 24 )
+				points:SetPos( 145, 0 )
 
-				Button:SetSize( 150, 20 )
-				Button:SetPos( 300, 0 )
+				Button:SetSize( 140, 24 )
+				Button:SetPos( 290, 0 )
 			else
-				slay:SetSize( 225, 20 )
-				slay:SetPos( 0, 0 )
+				slay:SetSize( 204, 24 )
+				slay:SetPos( 3, 0 )
 
-				Button:SetSize( 225, 20 )
-				Button:SetPos( 225, 0 )
+				Button:SetSize( 204, 24 )
+				Button:SetPos( 217, 0 )
 			end
 
 			ColumnSheet:AddSheet(report.victim_nick, PanelList, "icon16/report_user.png")
