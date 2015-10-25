@@ -302,8 +302,9 @@ net.Receive("DL_SendAnswer", function(_, ply)
 	if tbl.chat_opened then return end
 	if ply:SteamID() != tbl.attacker then return end
 	if action == 1 then
-		if bad then
+		if tbl.bad then
 			RunConsoleCommand( "ulx", "aslay", ply:Nick(), 2 )
+			//PrintMessage( HUD_PRINTTALK, "bad rdm" )
 		else
 			RunConsoleCommand( "ulx", "aslay", ply:Nick(), 1 )
 		end
@@ -314,19 +315,21 @@ net.Receive("DL_SendAnswer", function(_, ply)
 				if v:IsActive() then
 					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, "The report #"..index.." has been resolved! (The attacker will be slain next round.)", 5, "ui/vote_yes.wav")
 				else
-					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, ply:Nick().." has canceled the report #"..index.." !", 5, "ui/vote_yes.wav")
+					v:Damagelog_Notify(DAMAGELOG_NOTIFY_INFO, ply:Nick().." has chosen to be slan on report #"..index.." !", 5, "ui/vote_yes.wav")
 				end
 			end
 			v:UpdateReport(previous, index)
 		end
+		UpdatePreviousReports()
 		return
 	elseif action == 2 then
-		if bad then
+		if tbl.bad then
 			RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 20 )
 			RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 20 )
+			//PrintMessage( HUD_PRINTTALK, "bad rdm" )
 		else
-			RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 20 )
-			RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 20 )
+			RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 10 )
+			RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 10 )
 		end
 		tbl.status = RDM_MANAGER_CANCELED
 		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
@@ -340,6 +343,7 @@ net.Receive("DL_SendAnswer", function(_, ply)
 			end
 			v:UpdateReport(previous, index)
 		end
+		UpdatePreviousReports()
 		return
 	end
 	tbl.response = text
