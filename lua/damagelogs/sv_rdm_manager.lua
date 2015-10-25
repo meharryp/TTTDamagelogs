@@ -306,7 +306,7 @@ net.Receive("DL_SendAnswer", function(_, ply)
 		return
 	elseif action == 2 then
 		RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 10 )
-		RunConsoleCommand( "ulx", "givepoints", tbl.attacker_nick, -10 )
+		RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 10 )
 		tbl.status = RDM_MANAGER_CANCELED
 		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
 		for k,v in pairs(player.GetHumans()) do
