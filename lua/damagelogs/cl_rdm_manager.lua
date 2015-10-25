@@ -20,6 +20,14 @@ Damagelog.ReportsQueue = Damagelog.ReportsQueue or {}
 local ReportFrame
 
 local function BuildReportFrame(report)
+
+	if LocalPlayer():IsBot() and report then
+		net.Start("DL_SendAnswer")
+		net.WriteUInt(current and 1 or 0, 1)
+		net.WriteString("i didn' do nuffin")
+		net.WriteUInt(report.index, 16)
+		net.SendToServer()
+	end
 	
 	if ReportFrame and ReportFrame:IsValid() then
 	
@@ -82,8 +90,11 @@ local function BuildReportFrame(report)
 			TextEntry:SetHeight(150)
 			PanelList:AddItem(TextEntry)
 
-			local Button = vgui.Create("DButton")
-			Button:SetText("Send")
+			local bPanel = vgui.Create( "DScrollPanel" )
+			PanelList:AddItem( bPanel )
+
+			local Button = vgui.Create("DButton", bPanel)
+			Button:SetText("Respond")
 			Button.DoClick = function()
 				local text = string.Trim(TextEntry:GetValue())
 				local size = #text
@@ -105,6 +116,7 @@ local function BuildReportFrame(report)
 					Info:SetText("Your response has been submitted!")
 					Info:SetInfoColor("orange")
 					net.Start("DL_SendAnswer")
+					net.WriteUInt( 0, 2 )
 					net.WriteUInt(current and 1 or 0, 1)
 					net.WriteString(text)
 					net.WriteUInt(report.index, 16)
@@ -118,7 +130,67 @@ local function BuildReportFrame(report)
 				end
 			end
 
-			PanelList:AddItem(Button)
+			local slay = vgui.Create( "DButton", bPanel )
+			slay:SetText( "Slay Myself" )
+			slay.DoClick = function()
+				report.finished = true
+				Button:SetDisabled( true )
+				slay:SetDisabled(true)
+				Info:SetText("Your response has been submitted!")
+				Info:SetInfoColor("orange")
+				net.Start("DL_SendAnswer")
+				net.WriteUInt( 1, 2 )
+				net.WriteUInt(current and 1 or 0, 1)
+				net.WriteString(text)
+				net.WriteUInt(report.index, 16)
+				net.SendToServer()
+				for k,v in pairs(Damagelog.ReportsQueue) do
+					if not v.finished then return end
+				end
+				ReportFrame:Close()
+				ReportFrame:Remove()
+				Damagelog:Notify(DAMAGELOG_NOTIFY_INFO, "Your response has been submitted!", 4, "")
+			end
+
+			if not slay then
+				local points = vgui.Create( "DButton", bPanel )
+				points:SetText( "Send Points" )
+				points.DoClick = function()
+					report.finished = true
+					slay:SetDisabled(true)
+					points:SetDisabled( true )
+					Button:SetDisabled( true )
+					Info:SetText("Your response has been submitted!")
+					Info:SetInfoColor("orange")
+					net.Start("DL_SendAnswer")
+					net.WriteUInt( 2, 2 )
+					net.WriteUInt(current and 1 or 0, 1)
+					net.WriteString(text)
+					net.WriteUInt(report.index, 16)
+					net.SendToServer()
+					for k,v in pairs(Damagelog.ReportsQueue) do
+						if not v.finished then return end
+					end
+					ReportFrame:Close()
+					ReportFrame:Remove()
+					Damagelog:Notify(DAMAGELOG_NOTIFY_INFO, "Your response has been submitted!", 4, "")
+				end
+
+				slay:SetSize( 150, 20 )
+				slay:SetPos( 0, 0 )
+
+				points:SetSize( 150, 20 )
+				points:SetPos( 150, 0 )
+
+				Button:SetSize( 150, 20 )
+				Button:SetPos( 300, 0 )
+			else
+				slay:SetSize( 225, 20 )
+				slay:SetPos( 0, 0 )
+
+				Button:SetSize( 225, 20 )
+				Button:SetPos( 225, 0 )
+			end
 
 			ColumnSheet:AddSheet(report.victim_nick, PanelList, "icon16/report_user.png")
 			
@@ -239,14 +311,14 @@ function Damagelog:ReportWindow(tbl)
 	Entry:SetMultiline(true)
 	
 	local Submit = vgui.Create("DButton", ReportPanel)
-	Submit:SetText("Submit")
+	Submit:SetText("Request Points")
 	Submit:SetPos(210, 195)
-	Submit:SetSize(370, 25)
+	Submit:SetSize(180, 25)
 	Submit.Think = function(self)
 		local characters = string.len(string.Trim(Entry:GetText()))
 		local disable = characters < 10 or not cur_selected
 		Submit:SetDisabled(disable)
-		Submit:SetText(disable and "Not enough characters to submit" or "Submit")
+		Submit:SetText(disable and "Not enough characters to submit" or "Request Points")
 	end
 	Submit.DoClick = function(self)
 		local ply = cur_selected.pl
@@ -254,6 +326,29 @@ function Damagelog:ReportWindow(tbl)
 		net.Start("DL_ReportPlayer")
 		net.WriteEntity(ply)
 		net.WriteString(Entry:GetText())
+		net.WriteBool( false )
+		net.SendToServer()
+		Frame:Close()
+		Frame:Remove()
+	end
+
+	local Submit2 = vgui.Create("DButton", ReportPanel)
+	Submit2:SetText("Request Slay")
+	Submit2:SetPos(400, 195)
+	Submit2:SetSize(180, 25)
+	Submit2.Think = function(self)
+		local characters = string.len(string.Trim(Entry:GetText()))
+		local disable = characters < 10 or not cur_selected
+		Submit2:SetDisabled(disable)
+		Submit2:SetText(disable and "Not enough characters to submit" or "Request Slay")
+	end
+	Submit2.DoClick = function(self)
+		local ply = cur_selected.pl
+		if not IsValid(ply) then return end
+		net.Start("DL_ReportPlayer")
+		net.WriteEntity(ply)
+		net.WriteString(Entry:GetText())
+		net.WriteBool( true )
 		net.SendToServer()
 		Frame:Close()
 		Frame:Remove()
