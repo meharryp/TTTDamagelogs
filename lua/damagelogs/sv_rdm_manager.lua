@@ -15,7 +15,7 @@ util.AddNetworkString("DL_Answering_global")
 util.AddNetworkString("DL_ForceRespond")
 util.AddNetworkString("DL_StartReport")
 util.AddNetworkString("DL_Conclusion")
-
+						
 Damagelog.Reports = Damagelog.Reports or { Current = {} }
 
 if not Damagelog.Reports.Previous then
@@ -162,6 +162,11 @@ net.Receive("DL_ReportPlayer", function(_len, ply)
 		return 
 	end
 	table.insert(ply.Reported, attacker)
+	local bad = false
+	if attacker.RDMType == 2 then
+		bad = true
+	end
+	attacker.RDMType = nil
 	local index = table.insert(Damagelog.Reports.Current, {
 		victim = ply:SteamID(),
 		victim_nick = ply:Nick(),
@@ -175,7 +180,8 @@ net.Receive("DL_ReportPlayer", function(_len, ply)
 		chat_open = false,
 		logs = ply.DeathDmgLog and ply.DeathDmgLog[Damagelog.CurrentRound] or false,
 		conclusion = false,
-		slay = slay
+		slay = slay,
+		bad = bad
 	})
 	Damagelog.Reports.Current[index].index = index
 	for k,v in pairs(player.GetHumans()) do
@@ -266,7 +272,13 @@ hook.Add("PlayerAuthed", "RDM_Manager", function(ply)
 	end
 end)
 
-hook.Add("PlayerDeath", "RDM_Manager", function(ply)
+hook.Add("PlayerDeath", "RDM_Manager", function(ply, inf, att)
+	att.RDMType = 0
+	if ply:GetRole() == ROLE_INNOCENT and ( att:GetRole() == ROLE_INNOCENT or att:GetRole() == ROLE_DETECTIVE ) then
+		att.RDMType = 1
+	elseif ply:GetRole() == ROLE_TRAITOR or ( att:GetRole() == ROLE_INNOCENT and ply:GetRole() == ROLE_DETECTIVE ) then
+		att.RDMType = 2
+	end
 	net.Start("DL_Death")
 	net.Send(ply)
 end)
@@ -290,7 +302,11 @@ net.Receive("DL_SendAnswer", function(_, ply)
 	if tbl.chat_opened then return end
 	if ply:SteamID() != tbl.attacker then return end
 	if action == 1 then
-		RunConsoleCommand( "ulx", "aslay", ply:Nick(), 1 )
+		if bad then
+			RunConsoleCommand( "ulx", "aslay", ply:Nick(), 2 )
+		else
+			RunConsoleCommand( "ulx", "aslay", ply:Nick(), 1 )
+		end
 		tbl.status = RDM_MANAGER_CANCELED
 		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
 		for k,v in pairs(player.GetHumans()) do
@@ -305,8 +321,13 @@ net.Receive("DL_SendAnswer", function(_, ply)
 		end
 		return
 	elseif action == 2 then
-		RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 10 )
-		RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 10 )
+		if bad then
+			RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 20 )
+			RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 20 )
+		else
+			RunConsoleCommand( "ulx", "givepoints", ply:Nick(), 20 )
+			RunConsoleCommand( "ulx", "takepoints", tbl.attacker_nick, 20 )
+		end
 		tbl.status = RDM_MANAGER_CANCELED
 		tbl.conclusion = "(Auto) "..tbl.attacker_nick.." has been slain."
 		for k,v in pairs(player.GetHumans()) do
