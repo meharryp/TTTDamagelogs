@@ -273,14 +273,18 @@ hook.Add("PlayerAuthed", "RDM_Manager", function(ply)
 end)
 
 hook.Add("PlayerDeath", "RDM_Manager", function(ply, inf, att)
-	att.RDMType = 0
-	if ply:GetRole() == ROLE_INNOCENT and ( att:GetRole() == ROLE_INNOCENT or att:GetRole() == ROLE_DETECTIVE ) then
-		att.RDMType = 1
-	elseif ply:GetRole() == ROLE_TRAITOR or ( att:GetRole() == ROLE_INNOCENT and ply:GetRole() == ROLE_DETECTIVE ) then
-		att.RDMType = 2
+	if IsValid( ply ) and IsValid( att ) then
+		if ply:IsPlayer() and att:IsPlayer() then
+			att.RDMType = 0
+			if ply:GetRole() == ROLE_INNOCENT and ( att:GetRole() == ROLE_INNOCENT or att:GetRole() == ROLE_DETECTIVE ) then
+				att.RDMType = 1
+			elseif ply:GetRole() == ROLE_TRAITOR or ( att:GetRole() == ROLE_INNOCENT and ply:GetRole() == ROLE_DETECTIVE ) then
+				att.RDMType = 2
+			end
+			net.Start("DL_Death")
+			net.Send(ply)
+		end
 	end
-	net.Start("DL_Death")
-	net.Send(ply)
 end)
 
 hook.Add("TTTEndRound", "RDM_Manager", function()
