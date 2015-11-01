@@ -325,6 +325,7 @@ net.Receive("DL_SendAnswer", function(_, ply)
 			v:UpdateReport(previous, index)
 		end
 		UpdatePreviousReports()
+		hook.Call( "TTTDLog_Decide", nil, tbl.victim, IsValid( ply ) and ply or tbl.attacker, true, index )
 		return
 	elseif action == 2 then
 		if tbl.bad then
@@ -348,6 +349,7 @@ net.Receive("DL_SendAnswer", function(_, ply)
 			v:UpdateReport(previous, index)
 		end
 		UpdatePreviousReports()
+		hook.Call( "TTTDLog_Decide", nil, tbl.victim, IsValid( ply ) and ply or tbl.attacker, true, index )
 		return
 	end
 	tbl.response = text
